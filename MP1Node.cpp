@@ -289,7 +289,7 @@ void MP1Node::disseminateMsg(const char * label, enum MsgTypes msgType, Address 
     //TODO fix it
     memcpy(data, &memberNode->addr.addr, sizeof(memberNode->addr.addr));
     data += sizeof(memberNode->addr.addr);
-    char * currentMemberPosition = data;
+    char* currentMemberPosition = data;
     data += sizeof(long);
 	totalMembersCount = cleanUpMemberList(totalMembersCount, data);
 	log->LOG(&memberNode->addr, "Total Members count in the list %d", totalMembersCount);
@@ -344,7 +344,7 @@ bool MP1Node::refreshMemberList(const char * label, void *env, char *data, int s
  * Send join request for the members
  *
  */
-bool MP1Node::sendJoinReqMsg(void *env, char *data) {
+bool MP1Node::sendJoinReplyMsg(void *env, char *data) {
 
     Address memberJoinAddress;
     long heartbeat;
@@ -367,7 +367,7 @@ bool MP1Node::sendJoinReqMsg(void *env, char *data) {
 /**
  * Receive Join response message
  */
-bool MP1Node::recvJoinRepMsg(void *env, char *data, int size) {
+bool MP1Node::recvJoinReplyMsg(void *env, char *data, int size) {
 
 	Address fromAddr;
     memcpy(fromAddr.addr, data, sizeof(memberNode->addr.addr));
@@ -441,16 +441,21 @@ bool MP1Node::recvCallBack(void *env, char *data, int size ) {
 
     log->LOG(&memberNode->addr, "Message recvCallBack, size :%d", size);
 
-    if(((MessageHdr *)data)->msgType == JOINREQ) {
-    	return sendJoinReqMsg(env, data + sizeof(MessageHdr));
-    } else if (((MessageHdr *)data)->msgType == JOINREP) {
-    	return recvJoinRepMsg(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
-    } else if(((MessageHdr *)data)->msgType == SENDHEARTBEAT) {
-    	return sendHeartBeatMsg(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
-    } else if(((MessageHdr *)data)->msgType == RECEIVEHEARTBEAT) {
-    	return recvHeartbeatMsg(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
-    }
+    // If member not in the group then accept only JOINREP msg type
+    if ( (memberNode->inGroup && ((MessageHdr *)data)->msgType >= 0)
+    			|| (!memberNode->inGroup && ((MessageHdr *)data)->msgType == JOINREP) ) {
 
+		if(((MessageHdr *)data)->msgType == JOINREQ) {
+			return sendJoinReplyMsg(env, data + sizeof(MessageHdr));
+		} else if (((MessageHdr *)data)->msgType == JOINREP) {
+			return recvJoinReplyMsg(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
+		} else if(((MessageHdr *)data)->msgType == SENDHEARTBEAT) {
+			return sendHeartBeatMsg(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
+		} else if(((MessageHdr *)data)->msgType == RECEIVEHEARTBEAT) {
+			return recvHeartbeatMsg(env, data + sizeof(MessageHdr), size - sizeof(MessageHdr));
+		}
+    }
+    free(data);
     return false;
 }
 

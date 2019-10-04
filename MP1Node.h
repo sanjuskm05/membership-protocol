@@ -66,8 +66,8 @@ private:
 	bool refreshMemberList(const char * label, void *env, char *data, int size);
 	void disseminateMsg(const char * label, enum MsgTypes msgType, Address *to);
 
-	bool sendJoinReqMsg(void *env, char *data);
-	bool recvJoinRepMsg(void *env, char *data, int size);
+	bool sendJoinReplyMsg(void *env, char *data);
+	bool recvJoinReplyMsg(void *env, char *data, int size);
 	bool sendHeartBeatMsg(void *env, char *data, int size);
 	bool recvHeartbeatMsg(void *env, char *data, int size);
 
